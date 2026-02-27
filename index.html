@@ -142,66 +142,23 @@
     .preview.visible { display: block; }
     
     .comparison {
-      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
       margin-bottom: 1rem;
+    }
+    .comparison .img-box {
+      text-align: center;
+    }
+    .comparison .img-box .label {
+      color: #888;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
     }
     .comparison img { 
       max-width: 100%; 
       border-radius: 8px; 
-      display: block;
-    }
-    .comparison .before,
-    .comparison .after {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      overflow: hidden;
-    }
-    .comparison .before { z-index: 1; }
-    .comparison .after { z-index: 0; }
-    .comparison .slider {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 50%;
-      width: 4px;
-      background: #ff6b6b;
-      cursor: ew-resize;
-      z-index: 2;
-      transform: translateX(-50%);
-    }
-    .comparison .slider::after {
-      content: '⟷';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #ff6b6b;
-      color: #000;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-    .comparison .labels {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      justify-content: space-between;
-      pointer-events: none;
-    }
-    .comparison .labels span {
-      background: rgba(0,0,0,0.7);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      color: #fff;
     }
     
     .stats {
@@ -298,12 +255,13 @@
     
     <div class="preview" id="preview">
       <div class="comparison" id="comparison">
-        <img class="after" id="afterImg" src="">
-        <div class="before"><img id="beforeImg" src=""></div>
-        <div class="slider" id="slider"></div>
-        <div class="labels">
-          <span>Original</span>
-          <span>Compressed</span>
+        <div class="img-box">
+          <div class="label">Before</div>
+          <img id="beforeImg" src="">
+        </div>
+        <div class="img-box">
+          <div class="label">After</div>
+          <img id="afterImg" src="">
         </div>
       </div>
       
@@ -348,7 +306,6 @@
     const clearBtn = document.getElementById('clearBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
-    const slider = document.getElementById('slider');
     const comparison = document.getElementById('comparison');
     
     let files = [];
@@ -552,13 +509,11 @@
       
       reader1.onload = (e) => {
         document.getElementById('beforeImg').src = e.target.result;
-        document.getElementById('afterImg').src = e.target.result; // placeholder
       };
       reader1.readAsDataURL(item.original);
       
       reader2.onload = (e) => {
         document.getElementById('afterImg').src = e.target.result;
-        document.getElementById('beforeImg').parentElement.style.clipPath = `inset(0 ${100 - parseInt(slider.style.left || 50)}% 0 0)`;
       };
       reader2.readAsDataURL(item.blob);
       
@@ -570,38 +525,7 @@
       document.getElementById('formatUsed').textContent = getExtension(formatSelect.value).toUpperCase();
       
       preview.classList.add('visible');
-      
-      // Reset slider
-      slider.style.left = '50%';
-      document.getElementById('beforeImg').parentElement.style.clipPath = 'inset(0 50% 0 0)';
     }
-    
-    // Comparison slider
-    let isDragging = false;
-    slider.addEventListener('mousedown', () => isDragging = true);
-    document.addEventListener('mouseup', () => isDragging = false);
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      const rect = comparison.getBoundingClientRect();
-      let x = e.clientX - rect.left;
-      x = Math.max(0, Math.min(x, rect.width));
-      const pct = (x / rect.width) * 100;
-      slider.style.left = pct + '%';
-      document.getElementById('beforeImg').parentElement.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
-    });
-    
-    // Touch support
-    slider.addEventListener('touchstart', () => isDragging = true);
-    document.addEventListener('touchend', () => isDragging = false);
-    document.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const rect = comparison.getBoundingClientRect();
-      let x = e.touches[0].clientX - rect.left;
-      x = Math.max(0, Math.min(x, rect.width));
-      const pct = (x / rect.width) * 100;
-      slider.style.left = pct + '%';
-      document.getElementById('beforeImg').parentElement.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
-    });
     
     downloadBtn.addEventListener('click', () => {
       if (!compressedBlobs[currentIndex]) return;
