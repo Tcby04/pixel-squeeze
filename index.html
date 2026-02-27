@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PixelSqueeze - Fast Image Compressor</title>
+  <!-- Google AdSense - Replace pub-XXXXXXXXXXXXXX with your AdSense publisher ID -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXX"
+     crossorigin="anonymous"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -181,12 +184,23 @@
     .download-all-btn.visible { display: block; }
     
     .footer { text-align: center; margin-top: 2rem; color: #555; font-size: 0.8rem; }
+    .ad-banner { text-align: center; margin: 1.5rem 0; min-height: 90px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🗜️ PixelSqueeze</h1>
     <p class="tagline">Fast image compression — 100% in your browser</p>
+    
+    <!-- Top banner ad -->
+    <div class="ad-banner">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXX"
+           data-ad-slot="1234567890"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
     
     <div class="dropzone" id="dropzone">
       <div class="icon">📁</div>
@@ -289,9 +303,21 @@
     </div>
     
     <p class="footer">No uploads. Your images never leave your device.</p>
+    
+    <!-- Bottom banner ad -->
+    <div class="ad-banner">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXX"
+           data-ad-slot="0987654321"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
   </div>
 
   <script>
+    // Initialize ads
+    (adsbygoogle = window.adsbygoogle || []).push({});
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const controls = document.getElementById('controls');
