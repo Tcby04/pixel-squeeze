@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PixelSqueeze - Fast Image Compressor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { 
+      text-align: center; 
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #ff6b6b, #feca57);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .tagline { text-align: center; color: #888; margin-bottom: 2rem; }
+    
+    .dropzone {
+      border: 2px dashed #444;
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: #1a1a1a;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: #ff6b6b; background: #222; }
+    .dropzone p { color: #888; }
+    .dropzone .icon { font-size: 3rem; margin-bottom: 1rem; }
+    
+    .controls {
+      display: none;
+      margin-top: 2rem;
+      background: #1a1a1a;
+      padding: 1.5rem;
+      border-radius: 12px;
+    }
+    .controls.visible { display: block; }
+    
+    .control-group { margin-bottom: 1rem; }
+    .control-group label { display: block; margin-bottom: 0.5rem; color: #aaa; }
+    .control-group input[type="range"] { width: 100%; }
+    .control-group .value { float: right; color: #ff6b6b; }
+    
+    .preview {
+      display: none;
+      margin-top: 2rem;
+      background: #1a1a1a;
+      padding: 1.5rem;
+      border-radius: 12px;
+    }
+    .preview.visible { display: block; }
+    .preview img { 
+      max-width: 100%; 
+      border-radius: 8px; 
+      margin-bottom: 1rem;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .stat { text-align: center; }
+    .stat .label { color: #888; font-size: 0.8rem; }
+    .stat .value { font-size: 1.2rem; font-weight: bold; }
+    .stat .value.savings { color: #4cd137; }
+    
+    button {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.02); }
+    .compress-btn { background: linear-gradient(135deg, #ff6b6b, #feca57); color: #000; }
+    .download-btn { background: #4cd137; color: #000; margin-top: 0.5rem; display: none; }
+    .download-btn.visible { display: block; }
+    
+    .footer { text-align: center; margin-top: 3rem; color: #555; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🗜️ PixelSqueeze</h1>
+    <p class="tagline">Fast image compression — 100% in your browser</p>
+    
+    <div class="dropzone" id="dropzone">
+      <div class="icon">📁</div>
+      <p>Drop images here or click to browse</p>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+    
+    <div class="controls" id="controls">
+      <div class="control-group">
+        <label>Quality: <span class="value" id="qualityValue">80%</span></label>
+        <input type="range" id="quality" min="10" max="100" value="80">
+      </div>
+      <div class="control-group">
+        <label>Max Width: <span class="value" id="widthValue">1920px</span></label>
+        <input type="range" id="maxWidth" min="500" max="4000" value="1920" step="100">
+      </div>
+      <button class="compress-btn" id="compressBtn">Compress Image</button>
+    </div>
+    
+    <div class="preview" id="preview">
+      <img id="previewImg" src="" alt="Preview">
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Original</div>
+          <div class="value" id="originalSize">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Compressed</div>
+          <div class="value" id="compressedSize">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Saved</div>
+          <div class="value savings" id="savings">—</div>
+        </div>
+      </div>
+      <button class="download-btn" id="downloadBtn">Download Compressed</button>
+    </div>
+    
+    <p class="footer">No uploads. Your images never leave your device.</p>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const controls = document.getElementById('controls');
+    const preview = document.getElementById('preview');
+    const qualitySlider = document.getElementById('quality');
+    const widthSlider = document.getElementById('maxWidth');
+    const compressBtn = document.getElementById('compressBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    let originalFile = null;
+    let compressedBlob = null;
+    let originalReader = null;
+    
+    // Drag & drop
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFile(e.target.files[0]); });
+    
+    // Slider displays
+    qualitySlider.addEventListener('input', () => document.getElementById('qualityValue').textContent = qualitySlider.value + '%');
+    widthSlider.addEventListener('input', () => document.getElementById('widthValue').textContent = widthSlider.value + 'px');
+    
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+    
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) return alert('Please select an image');
+      originalFile = file;
+      
+      originalReader = new FileReader();
+      originalReader.onload = (e) => {
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('originalSize').textContent = formatSize(file.size);
+        controls.classList.add('visible');
+        preview.classList.remove('visible');
+        downloadBtn.classList.remove('visible');
+      };
+      originalReader.readAsDataURL(file);
+    }
+    
+    compressBtn.addEventListener('click', () => {
+      if (!originalFile) return;
+      
+      const quality = parseInt(qualitySlider.value) / 100;
+      const maxWidth = parseInt(widthSlider.value);
+      
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          compressedBlob = blob;
+          document.getElementById('compressedSize').textContent = formatSize(blob.size);
+          const saved = originalFile.size - blob.size;
+          const pct = ((saved / originalFile.size) * 100).toFixed(1);
+          document.getElementById('savings').textContent = pct + '%';
+          document.getElementById('previewImg').src = URL.createObjectURL(blob);
+          preview.classList.add('visible');
+          downloadBtn.classList.add('visible');
+        }, 'image/jpeg', quality);
+      };
+      img.src = URL.createObjectURL(originalFile);
+    });
+    
+    downloadBtn.addEventListener('click', () => {
+      if (!compressedBlob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(compressedBlob);
+      a.download = 'compressed-' + originalFile.name.replace(/\.[^.]+$/, '.jpg');
+      a.click();
+    });
+  </script>
+</body>
+</html>
